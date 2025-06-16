@@ -1,0 +1,56 @@
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+//declaring all functions
+int search_files(char *final_path, char *target_id);
+int count = 1;
+
+int main(void) {
+    char start_path[300];
+    char target_id[100];
+    char final_path[300];
+    const char *home = getenv("USERPROFILE"); 
+    if (home == NULL) {
+        printf("Could not get home directory.\n");
+        return 1;
+    }
+    printf("What Directory would you like to search: ");
+    scanf("%s", start_path); //sets where to look
+    printf("Enter a search word eg .txt: ");
+    scanf("%s", target_id); // sets what to look for
+    snprintf(final_path,sizeof(final_path),"%s\\%s",home,start_path); //creates final path
+   search_files(final_path, target_id);
+    return 0;
+}
+int search_files(char *final_path, char *target_id) {
+    char new_path[300];
+    DIR *dir = opendir(final_path); //opens directory
+    struct dirent *entry;
+    struct stat stat_path;
+
+    if (dir == NULL) {
+        printf("File not found. \n");
+        return 1;
+    }
+        while ((entry = readdir(dir)) != NULL) {
+            snprintf(new_path,sizeof(new_path),"%s\\%s",final_path,entry->d_name);
+            if (stat(new_path, &stat_path) == -1) {
+                continue;
+            }
+            if (S_ISDIR(stat_path.st_mode)) { //checks to see if it is a subdir
+                if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                    search_files(new_path,target_id );
+                }
+                }else {
+                    if (strstr(entry->d_name,target_id) != NULL) {
+                    printf("%d)%s\n",count, entry->d_name);
+                    count++;
+                }
+            }
+        }
+        closedir(dir);
+        return 0;
+    }
